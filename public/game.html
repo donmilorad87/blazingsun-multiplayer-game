@@ -1,0 +1,78 @@
+<h1 class="topMessage"> Dobrodosli </h1>
+<h3 class="message"> </h3>
+<div class="output"></div>
+<input name="user" type="text" value="user">
+<button class="btn1"> Join </button>
+<button class="btn3"> krmaca </button>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+
+    const socket = io()
+    const output = document.getElementsByClassName('output')[0]
+    const message = document.getElementsByClassName('message')[0]
+    const user = document.getElementsByTagName('input')[0]
+    const btn1 = document.getElementsByClassName('btn1')[0]
+    let id = 'player_' + Math.floor(Date.now() * Math.random())
+    btn1.addEventListener('click', function(){
+        
+            socket.emit('new player', id, user.value)
+            user.remove()
+            btn1.remove()
+            
+            document.getElementsByClassName('topMessage')[0].textContent = 'Nadimak: ' + user.value
+
+            let x = document.createElement('button')
+                x.className='btn2'
+                x.textContent = 'Roll'
+                document.getElementsByTagName('body')[0].appendChild(x)
+                x.addEventListener('click',function(){
+                    console.log('krkica')
+                    socket.emit('roll')
+                    x.disabled = true
+                })    
+    })
+    socket.on('players',listPlayers)
+    socket.on('inplay',checkwinner)
+    socket.on('game', checkPlayersInGame)
+
+    function checkwinner(data){
+        message.innerHTML = data
+        document.getElementsByClassName('btn2')[0].disabled = false
+    }
+
+    function checkPlayersInGame(players){
+        console.log(players)
+        let gameid = getUrlParameters('gameId')
+        if(players.gameid === gameid){
+            console.log(players)
+        }else{
+            console.log('ova igra je popunjena sa igracima')
+        }
+    }
+
+    function listPlayers(players){
+        message.textContent = players.length > 0 ? `Round ${players[0].round}` : `First Round 0`
+        output.innerHTML = 'players :'
+        players.forEach(function(player){
+            let div = document.createElement('div')
+            let temp = player.roll == null ? 'waiting':'roll: ' + player.roll
+            div.textContent = `${player.name} roll = ${temp}`
+            div.style.color = player.winner ? 'green' : 'black'
+            output.appendChild(div)
+        })
+    }
+    document.getElementsByClassName('btn3')[0].addEventListener('click', function(){
+        const gameid = getUrlParameters('gameId')
+        console.log(gameid)
+ 
+        socket.emit('gameId', gameid,id,user.value)
+
+    })
+    function getUrlParameters(parameter){
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        return urlParams.get(parameter)
+
+    }
+</script>
